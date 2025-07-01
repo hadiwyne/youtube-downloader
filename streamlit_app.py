@@ -4,8 +4,8 @@ from youtube_dl_wrapper import download_youtube_video
 import threading
 import time
 import glob
+import youtube_dl
 
-# --- Custom CSS for a modern look and button hover effect ---
 st.markdown("""
     <style>
         .main {
@@ -13,12 +13,12 @@ st.markdown("""
         }
         .stButton>button {
             background-color: #ff4b4b;
-            color: white;
+            color: white !important;
             border-radius: 8px;
             font-size: 18px;
             padding: 0.5em 2em;
             margin-top: 1em;
-            transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+            transition: box-shadow 0.2s, transform 0.2s, background 0.2s, color 0.2s;
             box-shadow: 0 2px 8px rgba(255,75,75,0.08);
         }
         .stButton>button:hover {
@@ -26,6 +26,7 @@ st.markdown("""
             box-shadow: 0 8px 24px rgba(255,75,75,0.18);
             transform: translateY(-4px) scale(1.04);
             filter: brightness(1.08);
+            color: white !important;
         }
         .stTextInput>div>div>input {
             border-radius: 8px;
@@ -82,6 +83,24 @@ def get_latest_file(folder):
         return None
     return max(files, key=os.path.getctime)
 
+def get_video_metadata(url):
+    ydl_opts = {'quiet': True, 'skip_download': True}
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        try:
+            info = ydl.extract_info(url, download=False)
+            return {
+                "title": info.get("title"),
+                "uploader": info.get("uploader"),
+                "duration": info.get("duration"),
+                "view_count": info.get("view_count"),
+                "like_count": info.get("like_count"),
+                "upload_date": info.get("upload_date"),
+                "description": info.get("description"),
+                "thumbnail": info.get("thumbnail"),
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
 st.markdown("<h1 style='text-align:center; color:#ff4b4b;'>🎬 YouTube HD Video Downloader</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align:center; color:#555;'>Download your favorite YouTube videos in high quality!</p>", unsafe_allow_html=True)
 
@@ -100,8 +119,30 @@ if 'download_thread' not in st.session_state:
 progress_bar = st.progress(0.0)
 status_text = st.empty()
 
+# Show metadata and start download on button click
 if st.button('Download'):
     if url:
+        # Show metadata
+        with st.spinner("Fetching video metadata..."):
+            meta = get_video_metadata(url)
+        if meta.get("error"):
+            st.error(f"Could not fetch metadata: {meta['error']}")
+        else:
+            with st.container():
+                st.markdown('<div class="card">', unsafe_allow_html=True)
+                cols = st.columns([1, 3])
+                with cols[0]:
+                    if meta.get("thumbnail"):
+                        st.image(meta["thumbnail"], width=120)
+                with cols[1]:
+                    st.markdown(f"**Title:** {meta.get('title', 'N/A')}")
+                    st.markdown(f"**Uploader:** {meta.get('uploader', 'N/A')}")
+                    st.markdown(f"**Duration:** {meta.get('duration', 'N/A')} seconds")
+                    st.markdown(f"**Views:** {meta.get('view_count', 'N/A')}")
+                    st.markdown(f"**Likes:** {meta.get('like_count', 'N/A')}")
+                    st.markdown(f"**Upload Date:** {meta.get('upload_date', 'N/A')}")
+                st.markdown('</div>', unsafe_allow_html=True)
+        # Start download
         output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
         os.makedirs(output_dir, exist_ok=True)
         progress_state['percent'] = 0.0
