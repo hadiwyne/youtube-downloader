@@ -5,7 +5,7 @@ import threading
 import time
 import glob
 
-# --- Custom CSS for a modern look ---
+# --- Custom CSS for a modern look and button hover effect ---
 st.markdown("""
     <style>
         .main {
@@ -18,6 +18,14 @@ st.markdown("""
             font-size: 18px;
             padding: 0.5em 2em;
             margin-top: 1em;
+            transition: box-shadow 0.2s, transform 0.2s, background 0.2s;
+            box-shadow: 0 2px 8px rgba(255,75,75,0.08);
+        }
+        .stButton>button:hover {
+            background: linear-gradient(90deg, #ff4b4b 60%, #ff8888 100%);
+            box-shadow: 0 8px 24px rgba(255,75,75,0.18);
+            transform: translateY(-4px) scale(1.04);
+            filter: brightness(1.08);
         }
         .stTextInput>div>div>input {
             border-radius: 8px;
@@ -44,6 +52,8 @@ st.markdown("""
             padding: 2em 2em 1em 2em;
             margin-bottom: 2em;
         }
+        /* Remove extra Streamlit block container padding */
+        section.main > div { padding-top: 0rem; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -79,7 +89,7 @@ with st.container():
     st.markdown('<div class="card">', unsafe_allow_html=True)
     col1, col2 = st.columns([3, 1])
     with col1:
-        url = st.text_input('🔗 Paste YouTube URL here')
+        url = st.text_input('🔗 Paste YouTube URL here', key="url_input")
     with col2:
         quality = st.selectbox('Quality', ['Best (highest quality)', '1080p', '720p', '480p', 'audio'])
     st.markdown('</div>', unsafe_allow_html=True)
@@ -90,7 +100,7 @@ if 'download_thread' not in st.session_state:
 progress_bar = st.progress(0.0)
 status_text = st.empty()
 
-if st.button('⬇️ Download'):
+if st.button('Download'):
     if url:
         output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
         os.makedirs(output_dir, exist_ok=True)
@@ -135,8 +145,8 @@ if st.session_state.get('download_thread') is not None:
             with open(latest_file, "rb") as f:
                 file_bytes = f.read()
             st.download_button(
-                label="🎉 Click here to download your video",
+                label="Click here to download your video",
                 data=file_bytes,
                 file_name=os.path.basename(latest_file),
-                mime="video/mp4"  # or adjust based on file type
+                mime="video/mp4" 
             )
