@@ -4,7 +4,7 @@ from youtube_dl_wrapper import download_youtube_video
 import threading
 import time
 import glob
-import youtube_dl
+import yt_dlp as youtube_dl 
 
 st.markdown("""
     <style>
